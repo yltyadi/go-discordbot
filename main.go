@@ -11,12 +11,11 @@ import (
 )
 
 const (
-	Token  = "MTIwMjg0NjU4Njk1NTIzOTQ3NA.GaF0wx.gL2IqafsNHJx7WYLVQAhcuvwdESmOX-39uC8qo"
 	Prefix = "!"
 )
 
 func main() {
-	dg, err := discordgo.New("Bot " + Token)
+	dg, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
 	if err != nil {
 		fmt.Println("Error creating Discord session: ", err)
 		return
