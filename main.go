@@ -4,56 +4,81 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 )
 
+const (
+	Token  = "MTIwMjg0NjU4Njk1NTIzOTQ3NA.GaF0wx.gL2IqafsNHJx7WYLVQAhcuvwdESmOX-39uC8qo"
+	Prefix = "!"
+)
+
 func main() {
-	// discord bot token is stored as an env variablee
-	token := os.Getenv("DISCORD_TOKEN")
-	if token == "" {
-		fmt.Println("Discord Bot token not found. Please set the DISCORD_TOKEN environment variable.")
-		return
-	}
-
-	// creating a new discord session
-	dg, err := discordgo.New("Bot " + token)
+	dg, err := discordgo.New("Bot " + Token)
 	if err != nil {
-		fmt.Println("Error creating Discord session:", err)
+		fmt.Println("Error creating Discord session: ", err)
 		return
 	}
 
-	// adding message handlers
 	dg.AddHandler(messageCreate)
 
-	// connecting to discord session
 	err = dg.Open()
 	if err != nil {
-		fmt.Println("Error opening Discord session:", err)
+		fmt.Println("Error opening connection: ", err)
 		return
 	}
 
-	fmt.Println("Bot is now running and listening to your commands. Press Ctrl+C to exit.")
+	fmt.Println("Bot is now running. Press CTRL+C to exit.")
 
-	// part of the code that stops the bot when needed
+	// Wait for a signal to exit
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	// closing the discord session before stopping the bot
+	// Cleanly close down the Discord session.
 	dg.Close()
 }
 
-// This function will be called whenever a new message is created
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// necessary so that the bot ignores the messages sent by itself
+	// Ignore messages from the bot itself
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
 
-	// respond to "ping" with "pong!"
-	if m.Content == "ping" {
-		s.ChannelMessageSend(m.ChannelID, "pong!")
+	// Check if the message starts with the command prefix
+	if strings.HasPrefix(m.Content, Prefix) {
+		fmt.Println("yep")
+		// Parse the command
+		command := strings.Split(strings.ToLower(m.Content)[1:], " ")
+
+		switch command[0] {
+		case "help":
+			helpCommand(s, m)
+		case "weather":
+			weatherCommand(s, m, command[1:])
+		case "translate":
+			translateCommand(s, m, command[1:])
+		default:
+			s.ChannelMessageSend(m.ChannelID, "Unknown command. Type !help for a list of commands.")
+		}
 	}
+}
+
+func helpCommand(s *discordgo.Session, m *discordgo.MessageCreate) {
+	helpMessage := "Available commands:\n" +
+		"!help - Display this help message.\n" +
+		"!weather <location> - Get current weather information for the specified location.\n" +
+		"!translate <language code> <text> - Translate the text to the specified language."
+
+	s.ChannelMessageSend(m.ChannelID, helpMessage)
+}
+
+func weatherCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
+	s.ChannelMessageSend(m.ChannelID, "Weather command...")
+}
+
+func translateCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
+	s.ChannelMessageSend(m.ChannelID, "Translation command...")
 }
